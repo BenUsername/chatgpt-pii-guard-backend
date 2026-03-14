@@ -55,6 +55,19 @@ app.post('/analyze', async (req, res) => {
   });
 });
 
+app.get('/scans', async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ error: 'Database not connected' });
+  }
+  try {
+    const scans = await Scan.find().sort({ timestamp: -1 }).limit(20);
+    res.json(scans);
+  } catch (err) {
+    console.error('Failed to fetch scans:', err);
+    res.status(500).json({ error: 'Failed to fetch scans' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
