@@ -9,18 +9,31 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // MongoDB Connection
-if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
-} else {
-  console.warn('Warning: MONGODB_URI not provided. Data will not be persisted.');
-}
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) return;
+  
+  if (process.env.MONGODB_URI) {
+    try {
+      await mongoose.connect(process.env.MONGODB_URI);
+      console.log('Connected to MongoDB');
+    } catch (err) {
+      console.error('MongoDB connection error:', err);
+    }
+  } else {
+    console.warn('Warning: MONGODB_URI not provided.');
+  }
+};
 
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS || 'chrome-extension://*'
 }));
 app.use(express.json());
+
+// Ensure DB is connected before processing requests
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 app.post('/analyze', async (req, res) => {
   const { conversation_id, message_id, text } = req.body;
